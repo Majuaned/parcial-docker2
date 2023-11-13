@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  mysql:
+    image: imagen-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    networks:
+      - redswarm
+    deploy:
+      replicas: 1 
+
+  service-nodejs:
+    image: image-rest
+    ports:
+      - "5050:5555"
+    networks:
+      - redswarm
+    deploy:
+      replicas: 1 
+
+  service-soap:
+    image: image-soap
+    ports:
+      - "5051:5051"
+    networks:
+      - redswarm
+    deploy:
+      replicas: 1
+
+  service-client:
+    image: client
+    ports:
+      - "8080:80"
+    networks:
+      - redswarm
+    deploy:
+      replicas: 2
+
+networks:
+  redswarm:

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cliente HTML</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 50px;
+        background-color: #f9f9f9; /* Fondo del cuerpo */
+        font-family: Arial, sans-serif; /* Tipo de fuente general */
+      }
+
+      table {
+        width: 80%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: #fff; /* Fondo de la tabla */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra suave */
+      }
+
+      th,
+      td {
+        border: 1px solid #ddd; /* Borde más suave */
+        padding: 12px;
+        text-align: center;
+      }
+
+      th {
+        background-color: #3498db; /* Fondo del encabezado */
+        color: #fff; /* Texto del encabezado en blanco */
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      input,
+      select {
+        margin-bottom: 15px;
+        padding: 10px;
+        border: 1px solid #ddd; /* Borde más suave */
+        border-radius: 5px; /* Bordes redondeados */
+      }
+
+      input[type="submit"] {
+        background-color: #2ecc71; /* Fondo del botón de envío */
+        color: #fff; /* Texto del botón en blanco */
+        cursor: pointer;
+        transition: background-color 0.3s ease; /* Transición suave */
+      }
+
+      input[type="submit"]:hover {
+        background-color: #27ae60; /* Cambio de color al pasar el mouse */
+      }
+    </style>
+  </head>
+
+  <body>
+    <form>
+      <input type="text" name="nomUsuario" placeholder="Nombre de usuario" />
+      <input type="text" name="perfil" placeholder="Perfil" />
+      <select name="activo" id="">
+        <option value="1">Si</option>
+        <option value="0">No</option>
+      </select>
+      <input type="submit" value="Insertar" />
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre de usuario</th>
+          <th>Perfil</th>
+          <th>Activo</th>
+        </tr>
+      </thead>
+      <tbody id="perfiles"></tbody>
+    </table>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const form = document.querySelector("form");
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const nomUsuario = document.querySelector(
+            'input[name="nomUsuario"]'
+          ).value;
+          const perfil = document.querySelector('input[name="perfil"]').value;
+          const activo = document.querySelector('select[name="activo"]').value;
+
+          const response = await fetch(
+            "http://localhost:5050/insertar_con_rest",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              body: `nomUsuario=${nomUsuario}&perfil=${perfil}&activo=${activo}`,
+            }
+          );
+
+          const data = await response.json();
+          if (data.msg === "Insertado correctamente") {
+            alert("Inserción exitosa");
+            location.reload();
+          } else {
+            alert("Error al insertar");
+          }
+        });
+
+        var myHeaders = new Headers();
+        myHeaders.append("Content-Type", "text/xml");
+
+        var raw =
+          '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://localhost:5051/consultar_usuarios">\r\n    <soapenv:Header/>\r\n    <soapenv:Body>\r\n        <web:consultarUsuarios/>\r\n    </soapenv:Body>\r\n</soapenv:Envelope>\r\n';
+
+        var requestOptions = {
+          method: "POST",
+          headers: myHeaders,
+          body: raw,
+          redirect: "follow",
+        };
+
+        fetch("http://localhost:5051/consultar_usuarios", requestOptions)
+          .then((response) => response.text())
+          .then((result) => {
+            updateTable(result);
+          })
+          .catch((error) => console.log("error", error));
+
+        function updateTable(result) {
+          const tableBody = document.getElementById("perfiles");
+          // Limpiar la tabla antes de agregar nuevos datos
+          /* tableBody.innerHTML = ""; */
+
+          // Parsear la respuesta SOAP
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(result, "text/xml");
+          console.log(xmlDoc);
+
+          // Obtener la lista de usuarios
+          const usuarios = xmlDoc.getElementsByTagNameNS(
+            "http://localhost:5051/consultar_usuarios",
+            "usuarios",
+            "usuarios"
+          );
+          console.log(usuarios);
+          for (let i = 1; i < usuarios.length; i++) {
+            const usuario = usuarios[i];
+            const id = usuario.querySelector("id").textContent;
+            const nomUsuario = usuario.querySelector("nomUsuario").textContent;
+            const perfil = usuario.querySelector("perfil").textContent;
+            const activo = usuario.querySelector("activo").textContent;
+
+            // Crear una fila y agregarla a la tabla
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${id}</td><td>${nomUsuario}</td><td>${perfil}</td><td>${activo}</td>`;
+            tableBody.appendChild(row);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
